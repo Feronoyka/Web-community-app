@@ -6,20 +6,22 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Pronouns } from './enum/pronouns.enum';
+import { Exclude } from 'class-transformer';
 
 @Entity()
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  @Column()
   id: string;
 
   @Column({ type: 'varchar', length: 20, nullable: false, unique: true })
   domainName: string;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: 'varchar', length: 100, select: false })
+  @Exclude()
   password: string;
 
   @Column({ nullable: false, unique: true })
+  @Exclude()
   email: string;
 
   @Column({ type: 'varchar', length: 20, nullable: false })
@@ -32,8 +34,10 @@ export class User {
   description: string;
 
   @CreateDateColumn()
+  @Exclude()
   createdAt: Date;
 
   @UpdateDateColumn()
+  @Exclude()
   updatedAt: Date;
 }
