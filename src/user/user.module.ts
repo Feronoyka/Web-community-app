@@ -4,7 +4,7 @@ import { UserController } from './user.controller';
 import { PasswordService } from './password/password.service';
 import { AuthService } from './auth/auth.service';
 import { AuthController } from './auth/auth.controller';
-import { APP_GUARD } from '@nestjs/core';
+// import { APP_GUARD } from '@nestjs/core';
 import { OwnerGuard } from './owner.guard';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './user.entity';
