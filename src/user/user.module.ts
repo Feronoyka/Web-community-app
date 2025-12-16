@@ -30,16 +30,7 @@ import { AuthConfig } from 'src/config/auth.config';
       },
     }),
   ],
-  providers: [
-    UserService,
-    PasswordService,
-    AuthService,
-    OwnerGuard,
-    {
-      provide: APP_GUARD,
-      useClass: AuthService,
-    },
-  ],
+  providers: [UserService, PasswordService, AuthService, OwnerGuard],
   controllers: [UserController, AuthController],
 })
 export class UserModule {}

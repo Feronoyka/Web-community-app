@@ -18,7 +18,7 @@ export class AuthService {
   ) {}
 
   public async register(createUserDto: CreateUserDto) {
-    const existingUser = await this.userService.findOneByEmail(
+    const existingUser = await this.userService.findOneByEmailWithPassword(
       createUserDto.email,
     );
 
@@ -30,7 +30,7 @@ export class AuthService {
   }
 
   public async login(email: string, plainPassword: string) {
-    const user = await this.userService.findOneByEmail(email);
+    const user = await this.userService.findOneByEmailWithPassword(email);
 
     if (
       !user ||

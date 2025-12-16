@@ -67,9 +67,15 @@ export class UserService {
     return user;
   }
 
+  public async findOneByEmailWithPassword(email: string): Promise<User | null> {
+    return await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.email = :email', { email })
+      .getOne();
+  }
+
   public async findOneByDomainName(domainName: string): Promise<User | null> {
-    const user = await this.userRepository.findOneBy({ domainName });
-    if (!user) return null;
-    return user;
+    return await this.userRepository.findOneBy({ domainName });
   }
 }
