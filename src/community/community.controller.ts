@@ -9,7 +9,7 @@ export class CommunityController {
   // @Post()
   // public async create(
   //   @Body() dto: CreateCommunityDto,
-  //   @Request() req: AuthRequest,
+  //   @Request() req:   AuthRequest,
   // ) {
   //   return this.communityService.create(dto, req.user.sub);
   // }

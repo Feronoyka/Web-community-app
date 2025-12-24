@@ -9,7 +9,7 @@ export class CommunityResponseDto {
   name: string;
 
   @Expose()
-  isFollowed?: boolean;
+  isFollowing?: boolean;
 
   @Expose()
   description?: string;

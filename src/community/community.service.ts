@@ -1,11 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Community } from './community.entity';
 import { User } from '../user/user.entity';
 import { PaginationParams } from 'src/common/pagination.params';
 import { FindCommunityQueryParams } from './find-community-query.params';
 import { CommunityResponseDto } from './community-response.dto';
+import { CreateCommunityDto } from './create-community.dto';
 
 @Injectable()
 export class CommunityService {
@@ -14,6 +20,7 @@ export class CommunityService {
     private readonly communityRepository: Repository<Community>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly dataSource: DataSource,
   ) {}
 
   public async findAll(
@@ -36,131 +43,138 @@ export class CommunityService {
       .getManyAndCount();
   }
 
-  public async findOne(id: string): Promise<CommunityResponseDto | null> {
-    const community = await this.communityRepository.findOne({
-      where: { id },
-      relations: ['owner'], // to load owner relation
-    });
+  public async findOne(
+    communityId: string,
+    currentUserId: string,
+  ): Promise<CommunityResponseDto | null> {
+    const query = this.communityRepository
+      .createQueryBuilder('community')
+      .loadRelationCountAndMap('community.followerCount', 'community.members')
+      .leftJoinAndSelect('community.owner', 'owner')
+      .where('community.id = :id', { id: communityId });
+
+    const community = await query.getOne();
     if (!community) return null;
 
-    const membersPreview = await this.userRepository // return minimal members
+    // check if current user already follows this community
+    const isFollowing = currentUserId
+      ? await this.isFollowed(communityId, currentUserId)
+      : false;
+
+    // return minimal members
+    const membersPreview = await this.userRepository
       .createQueryBuilder('user')
-      .innerJoin(
-        'user.followedCommunities',
-        'community',
-        'community.id = :communityId',
-        { id },
-      )
+      .innerJoin('user.followedCommunities', 'community')
+      .where('community.id = :communityId', { communityId })
       .take(10)
       .getMany();
 
-    community.members = membersPreview;
-
-    return community;
+    return new CommunityResponseDto({
+      ...community,
+      isFollowing,
+      members: membersPreview,
+    });
   }
 
-  /**
-   * Return a small preview list of members (minimal fields) to avoid loading full entities
-   */
+  public async follow(communityId: string, userId: string): Promise<boolean> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const community = await queryRunner.manager.findOne(Community, {
+        where: { id: communityId },
+        relations: ['owner'],
+      });
+
+      if (!community) throw new NotFoundException('Community not found');
+      if (community.ownerId === userId)
+        throw new BadRequestException('Owner cannot follow own community');
+
+      const isFollowing = await this.isFollowed(communityId, userId);
+      if (isFollowing) return false;
+
+      await queryRunner.manager
+        .createQueryBuilder()
+        .relation(Community, 'members')
+        .of(communityId)
+        .add(userId);
+
+      await queryRunner.commitTransaction();
+      return true;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  public async unfollow(communityId: string, userId: string): Promise<boolean> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const isFollowing = await this.isFollowed(communityId, userId);
+      if (!isFollowing) return false;
+
+      await queryRunner.manager
+        .createQueryBuilder()
+        .relation(Community, 'members')
+        .of(communityId)
+        .remove(userId);
+
+      await queryRunner.commitTransaction();
+      return false;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  public async createCommunity(
+    createCommunityDto: CreateCommunityDto,
+    ownerId: string,
+  ): Promise<Community> {
+    const community = this.communityRepository.create({
+      ...createCommunityDto,
+      ownerId,
+    });
+    return await this.communityRepository.save(community);
+  }
+
+  public async removeCommunity(
+    communityId: string,
+    ownerId: string,
+  ): Promise<void> {
+    const community = await this.communityRepository.findOne({
+      where: { id: communityId },
+      relations: ['owner'],
+    });
+
+    if (!community) throw new NotFoundException('Community not found');
+    if (community.ownerId !== ownerId)
+      throw new ForbiddenException('Only owner can delete community');
+
+    await this.communityRepository.remove(community);
+  }
+
+  private async isFollowed(
+    communityId: string,
+    userId: string,
+  ): Promise<boolean> {
+    if (!userId) return false;
+
+    return await this.userRepository
+      .createQueryBuilder('user')
+      .innerJoin('user.followedCommunities', 'community')
+      .where('user.id = :userId AND community.id = :communityId', {
+        userId,
+        communityId,
+      })
+      .getExists();
+  }
 }
-
-/**
- * Checks if a user follows the community
- */
-// public async isFollowed(
-//   communityId: string,
-//   userId: string,
-// ): Promise<boolean> {
-//   const user = await this.userRepository.findOne({
-//     where: { id: userId },
-//     relations: ['followedCommunities'],
-//   });
-
-//   if (!user) return false;
-
-//   return user.followedCommunities.some(
-//     (followedCommunity) => followedCommunity.id === communityId,
-//   );
-// }
-
-/**
- * Idempotent follow. Returns true when follow was added, false when already following.
- */
-// public async follow(communityId: string, userId: string): Promise<boolean> {
-//   const community = await this.communityRepository.findOneBy({
-//     id: communityId,
-//   });
-//   if (!community) throw new NotFoundException('Community not found');
-
-//   return await this.communityRepository.manager.transaction(
-//     async (manager) => {
-//       const user = await manager.findOne(User, {
-//         where: { id: userId },
-//         relations: ['followedCommunities'],
-//       });
-
-//       const exists =
-//         user?.followedCommunities.some(
-//           (followedCommunity) => followedCommunity.id === communityId,
-//         ) ?? false;
-
-//       if (exists) return false;
-
-//       await manager
-//         .createQueryBuilder()
-//         .relation(Community, 'members')
-//         .of(communityId)
-//         .add(userId);
-
-//       await manager
-//         .createQueryBuilder()
-//         .update(Community)
-//         .set({ followerCount: () => '"followerCount" + 1' })
-//         .where('id = :id', { id: communityId })
-//         .execute();
-
-//       return true;
-//     },
-//   );
-// }
-
-// /**
-//  * Idempotent unfollow. Returns true when unfollowed, false when not following.
-//  */
-// public async unfollow(communityId: string, userId: string): Promise<boolean> {
-//   const community = await this.communityRepository.findOneBy({
-//     id: communityId,
-//   });
-//   if (!community) throw new NotFoundException('Community not found');
-
-//   return await this.communityRepository.manager.transaction(
-//     async (manager) => {
-//       const user = await manager.findOne(User, {
-//         where: { id: userId },
-//         relations: ['followedCommunities'],
-//       });
-
-//       const exists =
-//         user?.followedCommunities.some(
-//           (followedCommunity) => followedCommunity.id === communityId,
-//         ) ?? false;
-
-//       if (!exists) return false;
-
-//       await manager
-//         .createQueryBuilder()
-//         .relation(Community, 'members')
-//         .of(communityId)
-//         .remove(userId);
-
-//       await manager
-//         .createQueryBuilder()
-//         .update(Community)
-//         .set({ followerCount: () => 'GREATEST("followerCount" - 1, 0)' })
-//         .where('id = :id', { id: communityId })
-//         .execute();
-
-//       return true;
-//     },
-//   );
-// }
