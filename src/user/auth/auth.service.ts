@@ -42,6 +42,10 @@ export class AuthService {
     return this.generateJwtToken(user);
   }
 
+  public async deleteUser(userId: string) {
+    return await this.userService.deleteUser(userId);
+  }
+
   private generateJwtToken(user: User) {
     const payload = {
       sub: user.id,

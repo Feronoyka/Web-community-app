@@ -4,7 +4,7 @@ import {
   Get,
   NotFoundException,
   Param,
-  Put,
+  Patch,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -30,8 +30,6 @@ export class UserController {
       data: users,
       meta: {
         total,
-        offset: 0,
-        limit: 5,
       },
     };
   }
@@ -43,7 +41,7 @@ export class UserController {
   }
 
   // edit own public profile
-  @Put(':id')
+  @Patch(':id')
   @UseGuards(AuthGuard('jwt'), OwnerGuard)
   public async update(
     @Param('id') id: string,

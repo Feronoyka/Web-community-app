@@ -68,14 +68,14 @@ describe('AuthController (e2e)', () => {
       .post('/auth/register')
       .send(testUser);
 
-    const response = await request(testSetup.app.getHttpServer())
+    const loginResponse = await request(testSetup.app.getHttpServer())
       .post('/auth/login')
       .send({
         email: testUser.email,
         password: testUser.password,
       });
 
-    const token = response.body.accessToken;
+    const token = loginResponse.body.accessToken;
 
     return await request(testSetup.app.getHttpServer())
       .get('/auth/profile')
@@ -103,5 +103,45 @@ describe('AuthController (e2e)', () => {
       .get('/auth/profile')
       .set('Authorization', 'Bearer xxx')
       .expect(401);
+  });
+
+  it('Login out succesfully - POST /auth/logout/:id', async () => {
+    await request(testSetup.app.getHttpServer())
+      .post('/auth/register')
+      .send(testUser);
+
+    const loginResponse = await request(testSetup.app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: testUser.email,
+        password: testUser.password,
+      });
+
+    const token = loginResponse.body.accessToken;
+
+    return await request(testSetup.app.getHttpServer())
+      .post('/auth/logout')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+  });
+
+  it('Delete own user account - DELETE /auth/account', async () => {
+    await request(testSetup.app.getHttpServer())
+      .post('/auth/register')
+      .send(testUser);
+
+    const loginResponse = await request(testSetup.app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: testUser.email,
+        password: testUser.password,
+      });
+
+    const token = loginResponse.body.accessToken;
+
+    return await request(testSetup.app.getHttpServer())
+      .delete('/auth/account')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(204);
   });
 });

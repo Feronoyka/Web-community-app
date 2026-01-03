@@ -90,6 +90,10 @@ export class UserService {
       .getOne();
   }
 
+  public async deleteUser(userId: string): Promise<void> {
+    await this.userRepository.delete(userId);
+  }
+
   public async findOneByDomainName(domainName: string): Promise<User | null> {
     return await this.userRepository.findOneBy({ domainName });
   }

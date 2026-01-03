@@ -3,7 +3,10 @@ import {
   Body,
   ClassSerializerInterceptor,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   NotFoundException,
   Post,
   Request,
@@ -43,6 +46,13 @@ export class AuthController {
     return new LoginResponseDto({ accessToken });
   }
 
+  @Post('logout')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  public logout() {
+    return { message: 'Logget out successfully' };
+  }
+
   @Get('profile')
   @UseGuards(AuthGuard('jwt'))
   public async getProfile(@Request() request: AuthRequest) {
@@ -53,5 +63,12 @@ export class AuthController {
     }
 
     throw new NotFoundException('User not found');
+  }
+
+  @Delete('account')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(204)
+  public async delete(@Request() req: AuthRequest) {
+    await this.authService.deleteUser(req.user.sub);
   }
 }
