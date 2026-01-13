@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 import request from 'supertest';
 import { generateUser } from './utils/generate-user';
-import { TestUser } from './test-user.model';
+import { TestUser } from './model/test-user.model';
 import { TestSetup } from './utils/test-setup';
 import { AppModule } from '../src/app.module';
 

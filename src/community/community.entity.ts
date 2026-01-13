@@ -1,12 +1,13 @@
+import { Message } from '../chat/entities/message.entity';
 import { User } from '../user/user.entity';
 import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
   Entity,
-  RelationId,
   ManyToMany,
   JoinTable,
+  OneToMany,
 } from 'typeorm';
 
 @Entity()
@@ -30,9 +31,12 @@ export class Community {
   @JoinTable({ name: 'community_members' })
   members: User[];
 
+  @OneToMany(() => Message, (message) => message.community)
+  message: Message[];
+
   @ManyToOne(() => User, (user) => user.ownedCommunities, { nullable: false })
   owner: User;
 
-  @RelationId((community: Community) => community.owner)
+  @Column()
   ownerId: string;
 }

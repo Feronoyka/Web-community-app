@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -45,7 +46,7 @@ export class CommunityService {
 
   public async findOne(
     communityId: string,
-    currentUserId: string,
+    currentUserId: string | null,
   ): Promise<Community> {
     const query = this.communityRepository
       .createQueryBuilder('community')
@@ -78,62 +79,55 @@ export class CommunityService {
   }
 
   public async follow(communityId: string, userId: string): Promise<boolean> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      const community = await queryRunner.manager.findOne(Community, {
+    return await this.dataSource.transaction(async (manager) => {
+      const community = await manager.findOne(Community, {
         where: { id: communityId },
-        relations: ['owner'],
       });
 
       if (!community) throw new NotFoundException('Community not found');
-      if (community.ownerId === userId)
+
+      if (community.ownerId === userId) {
         throw new BadRequestException('Owner cannot follow own community');
+      }
 
-      const isFollowing = await this.isFollowed(communityId, userId);
-      if (isFollowing) return false;
+      const isFollowing = await manager
+        .createQueryBuilder(User, 'user')
+        .innerJoin('user.followedCommunities', 'community')
+        .where('user.id = :userId AND community.id = :communityId', {
+          userId,
+          communityId,
+        })
+        .getExists();
 
-      await queryRunner.manager
+      if (isFollowing) {
+        throw new ConflictException(
+          'You are already a member of this community',
+        );
+      }
+
+      await manager
         .createQueryBuilder()
         .relation(Community, 'members')
         .of(communityId)
         .add(userId);
 
-      await queryRunner.commitTransaction();
       return true;
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   public async unfollow(communityId: string, userId: string): Promise<boolean> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return await this.dataSource.transaction(async (manager) => {
       const isFollowing = await this.isFollowed(communityId, userId);
       if (!isFollowing) return false;
 
-      await queryRunner.manager
+      await manager
         .createQueryBuilder()
         .relation(Community, 'members')
         .of(communityId)
         .remove(userId);
 
-      await queryRunner.commitTransaction();
-      return false;
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+      return true;
+    });
   }
 
   public async createCommunity(

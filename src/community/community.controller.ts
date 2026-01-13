@@ -21,6 +21,7 @@ import { PaginationParams } from '../common/pagination.params';
 import { PaginationResponse } from '../common/pagination-response.params';
 import { Community } from './community.entity';
 import { UpdateCommunityDto } from './update-community.dto';
+import { OptionalJwtAuthGuard } from '../guards/optional-jwt-auth.guard';
 
 @Controller('community')
 export class CommunityController {
@@ -33,13 +34,15 @@ export class CommunityController {
     @Body() createCommunityDto: CreateCommunityDto,
     @Req() req: AuthRequest,
   ) {
-    return this.communityService.createCommunity(
+    const community = this.communityService.createCommunity(
       createCommunityDto,
       req.user.sub,
     );
+
+    return community;
   }
 
-  // get all communities with limit 5
+  // get all communities with limit 10
   @Get()
   public async findAll(
     @Query() filter: FindCommunityQueryParams,
@@ -60,11 +63,14 @@ export class CommunityController {
 
   // get one community by id
   @Get(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   public async findOne(
     @Param('id') id: string,
     @Req() req: AuthRequest,
   ): Promise<Community> {
-    const community = await this.communityService.findOne(id, req.user.sub);
+    const userId = req.user?.sub || null;
+
+    const community = await this.communityService.findOne(id, userId);
 
     if (!community) {
       throw new NotFoundException('Community not found');

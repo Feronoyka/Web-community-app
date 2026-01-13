@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable } from '@nestjs/common';
 import { User } from './user.entity';
 import { Repository } from 'typeorm';
@@ -6,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateUserDto } from './create-user.dto';
 import { PasswordService } from './password/password.service';
 import { UserResponseDto } from './user-response.dto';
+import { FindCommunityQueryParams } from 'src/community/find-community-query.params';
 
 @Injectable()
 export class UserService {
@@ -27,7 +27,9 @@ export class UserService {
     return await this.userRepository.save(user);
   }
 
-  public async findAll(filter): Promise<[User[], number]> {
+  public async findAll(
+    filter: FindCommunityQueryParams,
+  ): Promise<[User[], number]> {
     const query = this.userRepository
       .createQueryBuilder('user')
       .take(5)

@@ -1,10 +1,4 @@
-import {
-  IsNotEmpty,
-  IsString,
-  IsUUID,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateCommunityDto {
   @IsNotEmpty({ message: 'The name is required' })
@@ -16,8 +10,4 @@ export class CreateCommunityDto {
   @IsString()
   @MaxLength(300)
   description?: string;
-
-  @IsNotEmpty()
-  @IsUUID()
-  ownerId: string;
 }

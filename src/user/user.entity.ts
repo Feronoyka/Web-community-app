@@ -10,6 +10,8 @@ import {
 import { Pronouns } from './enum/pronouns.enum';
 import { Exclude } from 'class-transformer';
 import { Community } from '../community/community.entity';
+import { Message } from '../chat/entities/message.entity';
+import { Conversation } from '../chat/entities/conversation.entity';
 
 @Entity()
 export class User {
@@ -40,6 +42,15 @@ export class User {
 
   @ManyToMany(() => Community, (community) => community.members)
   followedCommunities: Community[];
+
+  @OneToMany(() => Message, (message) => message.sender)
+  sentMessages: Message[];
+
+  @OneToMany(() => Message, (message) => message.receiver)
+  receivedMessages: Message[];
+
+  @ManyToMany(() => Conversation, (conversation) => conversation.participants)
+  conversation: Conversation[];
 
   @CreateDateColumn()
   @Exclude()
