@@ -1,5 +1,6 @@
 import { User } from '../../user/user.entity';
 import {
+  Entity,
   JoinTable,
   ManyToMany,
   OneToMany,
@@ -8,6 +9,7 @@ import {
 } from 'typeorm';
 import { Message } from './message.entity';
 
+@Entity()
 export class Conversation {
   @PrimaryGeneratedColumn('uuid')
   id: string;

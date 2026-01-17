@@ -11,6 +11,9 @@ import { CommunityModule } from './community/community.module';
 import { Community } from './community/community.entity';
 import { typeOrmConfig } from './config/database.config';
 import { appSchemaConfig } from './config/app-schema.config';
+import { Message } from './chat/entities/message.entity';
+import { ChatModule } from './chat/chat.module';
+import { Conversation } from './chat/entities/conversation.entity';
 
 @Module({
   imports: [
@@ -30,11 +33,12 @@ import { appSchemaConfig } from './config/app-schema.config';
       useFactory: (configService: TypedConfigService) => ({
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
         ...configService.get('database'),
-        entities: [User, Community],
+        entities: [User, Community, Message, Conversation],
       }),
     }),
     UserModule,
     CommunityModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [

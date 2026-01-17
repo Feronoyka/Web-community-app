@@ -5,14 +5,14 @@ import {
   CreateDateColumn,
   Entity,
   ManyToOne,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Conversation } from './conversation.entity';
 
 @Entity()
 export class Message {
-  @PrimaryColumn('uuid')
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
@@ -24,7 +24,7 @@ export class Message {
   @Column()
   senderId: string;
 
-  @ManyToOne(() => Community, (community) => community.message, {
+  @ManyToOne(() => Community, (community) => community.messages, {
     nullable: true,
   })
   community: Community;

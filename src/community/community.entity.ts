@@ -32,7 +32,7 @@ export class Community {
   members: User[];
 
   @OneToMany(() => Message, (message) => message.community)
-  message: Message[];
+  messages: Message[];
 
   @ManyToOne(() => User, (user) => user.ownedCommunities, { nullable: false })
   owner: User;
