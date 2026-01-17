@@ -12,7 +12,11 @@ import { Socket, Server } from 'socket.io';
 import { ChatService } from './chat.service';
 import { JwtService } from '@nestjs/jwt';
 
-@WebSocketGateway({ cors: '*', methods: ['GET', 'POST'], credentials: true })
+@WebSocketGateway({
+  cors: '*',
+  methods: ['GET', 'POST'],
+  credentials: true,
+})
 export class ChatGateway implements OnGatewayConnection {
   @WebSocketServer() server: Server;
 

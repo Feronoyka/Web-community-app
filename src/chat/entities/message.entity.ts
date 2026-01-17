@@ -21,8 +21,8 @@ export class Message {
   @ManyToOne(() => User, (user) => user.sentMessages)
   sender: User;
 
-  @Column()
-  senderId: string;
+  @Column({ nullable: true })
+  senderId?: string;
 
   @ManyToOne(() => Community, (community) => community.messages, {
     nullable: true,
@@ -35,14 +35,14 @@ export class Message {
   @ManyToOne(() => User, (user) => user.sentMessages, { nullable: true })
   receiver: User;
 
-  @Column()
-  receiverId: string;
+  @Column({ nullable: true })
+  receiverId?: string;
 
   @ManyToOne(() => Conversation, (conversation) => conversation.messages)
   conversation: Conversation;
 
   @Column({ nullable: true })
-  conversationId: string;
+  conversationId?: string;
 
   @CreateDateColumn()
   createdAt: Date;
